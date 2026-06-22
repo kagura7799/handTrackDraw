@@ -1,7 +1,3 @@
-"""
-HandTrackingModule — MediaPipe Tasks, Python 3.13+ совместим.
-"""
-
 import cv2
 import math
 import mediapipe as mp
@@ -42,9 +38,9 @@ class HandDetector:
         if not self.lm_list:
             return [0, 0, 0, 0, 0]
         fingers = []
-        # большой палец (по X после flip)
+        
         fingers.append(1 if self.lm_list[4][1] > self.lm_list[3][1] else 0)
-        # остальные (по Y)
+        
         for tip in [8, 12, 16, 20]:
             fingers.append(1 if self.lm_list[tip][2] < self.lm_list[tip - 2][2] else 0)
         return fingers
