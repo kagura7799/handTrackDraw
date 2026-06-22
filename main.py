@@ -1,8 +1,3 @@
-"""
-Virtual Painter — DearPyGui + OpenCV + MediaPipe
-Python 3.13+
-"""
-
 import cv2
 import numpy as np
 import dearpygui.dearpygui as dpg
@@ -11,14 +6,12 @@ import os
 
 from hand_tracking_module import HandDetector
 
-# ── константы ─────────────────────────────────────────────────────────────────
 WIN_W, WIN_H = 1280, 780
 CAM_W, CAM_H = 640, 480
 BRUSH  = 18
 ERASER = 80
 MODEL_PATH = "hand_landmarker.task"
 
-# BGR для OpenCV, RGBA для DearPyGui
 COLORS = {
     "Purple": {"bgr": (255,   0, 255), "rgba": (255,   0, 255, 255)},
     "Blue":   {"bgr": (255,   0,   0), "rgba": ( 50, 100, 255, 255)},
@@ -79,8 +72,6 @@ class App:
 
         self._build_ui()
 
-    # ─── обработчики кнопок (статические методы класса, не лямбды) ────────────
-    # DearPyGui всегда вызывает callback(sender, app_data, user_data)
     def _cb_set_purple(self, s, a, u): self._set_color("Purple")
     def _cb_set_blue  (self, s, a, u): self._set_color("Blue")
     def _cb_set_green (self, s, a, u): self._set_color("Green")
@@ -95,7 +86,6 @@ class App:
         self.canvas[:] = 0
         self.status = "Canvas cleared"
 
-    # ─── UI ───────────────────────────────────────────────────────────────────
     def _build_ui(self):
         dpg.create_context()
 
@@ -137,7 +127,6 @@ class App:
             dpg.add_text("Brush color:")
             dpg.add_spacer(height=4)
 
-            # Кнопки цветов — каждая со своим именованным callback-методом
             callbacks = [
                 ("Purple", self._cb_set_purple),
                 ("Blue",   self._cb_set_blue),
@@ -147,7 +136,7 @@ class App:
             with dpg.group(horizontal=True):
                 for key, cb in callbacks:
                     c = COLORS[key]["rgba"]
-                    # тема кнопки
+                    
                     with dpg.theme() as btn_theme:
                         with dpg.theme_component(dpg.mvButton):
                             dpg.add_theme_color(dpg.mvThemeCol_Button,        c)
@@ -185,7 +174,6 @@ class App:
         dpg.show_viewport()
         dpg.set_primary_window("main_win", True)
 
-    # ─── обработка кадра ──────────────────────────────────────────────────────
     def _process_frame(self):
         ok, img = self.cap.read()
         if not ok:
@@ -201,7 +189,7 @@ class App:
             x2, y2  = lm[12][1], lm[12][2]
             fingers = self.detector.fingers_up()
 
-            if fingers[1] and fingers[2]:               # 2 пальца — выбор цвета
+            if fingers[1] and fingers[2]:
                 self.xp, self.yp = 0, 0
                 if y1 < self.header_h and self.overlays:
                     zone = CAM_W // len(self.overlays)
@@ -212,7 +200,7 @@ class App:
                     self.status     = f"Color: {key}"
                 cv2.rectangle(img, (x1, y1-20), (x2, y2+20), self.draw_color, cv2.FILLED)
 
-            elif fingers[1] and not fingers[2]:         # 1 палец — рисование
+            elif fingers[1] and not fingers[2]:        
                 cv2.circle(img, (x1, y1), 12, self.draw_color, cv2.FILLED)
                 if self.xp == 0 and self.yp == 0:
                     self.xp, self.yp = x1, y1
@@ -220,7 +208,7 @@ class App:
                 cv2.line(self.canvas, (self.xp, self.yp), (x1, y1), self.draw_color, thick)
                 self.xp, self.yp = x1, y1
 
-            elif sum(fingers) == 5:                     # 5 пальцев — очистить
+            elif sum(fingers) == 5:                   
                 self._clear()
 
             else:
@@ -228,7 +216,6 @@ class App:
         else:
             self.xp, self.yp = 0, 0
 
-        # смешивание холста с кадром
         gray = cv2.cvtColor(self.canvas, cv2.COLOR_BGR2GRAY)
         _, inv = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)
         inv = cv2.cvtColor(inv, cv2.COLOR_GRAY2BGR)
@@ -240,7 +227,6 @@ class App:
 
         return img
 
-    # ─── главный цикл ─────────────────────────────────────────────────────────
     def run(self):
         while dpg.is_dearpygui_running():
             frame = self._process_frame()
